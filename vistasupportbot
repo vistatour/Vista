@@ -1,0 +1,48 @@
+import telebot
+from telebot import types
+
+# Замените 'YOUR_BOT_TOKEN' на токен вашего бота
+bot = telebot.TeleBot('6907639456:AAFWKyY6iWXGvnzPVJhOqs8vqF7vlnYEJMY')
+
+# Замените 'TARGET_USER_ID' на ID пользователя, которому нужно отправлять сообщения
+TARGET_USER_ID = 6115835851  # Замените на фактический ID
+
+@bot.message_handler(commands=['start'])
+def handle_start(message):
+    # Предложение отправить контакт
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button_contact = types.KeyboardButton("Отправить свой контакт \U0001F4DE", request_contact=True)
+    keyboard.add(button_contact)
+
+    bot.send_message(message.chat.id, "Привет! Для того чтобы операторы могли с вами связаться, пожалуйста, отправьте свой контакт.", reply_markup=keyboard)
+    bot.register_next_step_handler(message, forward_contact)
+
+def forward_contact(message):
+    # Информация о выбранной кнопке
+    button_info = f"Выбранная кнопка: {message.text}"
+
+    # Пересылаем все сообщения целевому пользователю
+    bot.forward_message(chat_id=TARGET_USER_ID, from_chat_id=message.chat.id, message_id=message.message_id)
+
+    # Предложение выбора способа связи с информацией о выбранной кнопке
+    keyboard = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    button_telegram = types.KeyboardButton("По телеграмму \U0001F4E9")
+    button_call = types.KeyboardButton("Звонок оператора \U0001F4DE")
+    keyboard.add(button_telegram, button_call)
+
+    bot.send_message(message.chat.id, f"{button_info}\nКаким образом вы хотите, чтобы с вами связались?", reply_markup=keyboard)
+    bot.register_next_step_handler(message, handle_contact_choice)
+
+def handle_contact_choice(message):
+    # Отправляем выбранный вариант связи указанному пользователю
+    chosen_option = message.text
+    bot.send_message(TARGET_USER_ID, f"Клиент выбрал: {chosen_option}")
+
+    if chosen_option == "По телеграмму \U0001F4E9":
+        bot.send_message(message.chat.id, "Отлично! Ожидайте сообщение от нашего оператора в телеграмме.")
+    elif chosen_option == "Звонок оператора \U0001F4DE":
+        bot.send_message(message.chat.id, "Хорошо! В ближайшее время с вами свяжется наш оператор по указанному контакту.")
+
+# Запускаем бота
+if __name__ == "__main__":
+    bot.polling(none_stop=True)
